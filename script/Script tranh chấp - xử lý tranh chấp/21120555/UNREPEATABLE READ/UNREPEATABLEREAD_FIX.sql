@@ -1,0 +1,117 @@
+﻿USE QLPHONGKHAM
+
+GO
+CREATE OR ALTER PROC sp_ThemPhieuHen 
+	@Ma VARCHAR(10),
+	@NhaSi VARCHAR(10),
+	@Ngay DATE,
+	@ca INT,
+	@sdt VARCHAR(11)
+AS
+SET TRANSACTION ISOLATION LEVEL REPEATABLE READ
+BEGIN TRAN
+	BEGIN TRY
+		IF EXISTS (SELECT * FROM PHIEUHEN WHERE MaPhieu = @Ma) 
+		BEGIN 
+		PRINT N'Đã tồn tại phiếu hẹn có mã: ' + @Ma
+			ROLLBACK TRAN 
+			RETURN 1 
+		END
+
+		IF NOT EXISTS(SELECT *  
+		FROM LICHCANHAN  
+		WHERE Ngay = @Ngay AND ThuTuCa = @Ca AND MaNhaSi = @Nhasi AND TrangThai <> N'Bận') 
+		BEGIN  
+			PRINT N'Lịch hẹn không hợp lệ với lịch cá nhân của nha sĩ' 
+			ROLLBACK TRAN 
+			RETURN 1 
+		END
+
+		IF EXISTS (SELECT *  
+       FROM PHIEUHEN WHERE Ngay = @Ngay and ThuTuCa = @Ca and NhaSiKham = @Nhasi) 
+		BEGIN 
+			PRINT N'Buổi làm việc này đã được một khách hàng khác đăng kí hẹn.' 
+			ROLLBACK TRAN  
+			RETURN 1 
+		END
+
+		WAITFOR DELAY '00:00:05' 
+		INSERT INTO PHIEUHEN VALUES (@Ma, @Nhasi, @Ngay, @Ca, @sdt) 
+		UPDATE LICHCANHAN  
+		SET TrangThai = N'Bận' 
+		WHERE Ngay = @Ngay and ThuTuCa = @Ca and MaNhaSi = @Nhasi
+
+	END TRY
+		
+	BEGIN CATCH
+		RAISERROR(N'LỖI HỆ THỐNG',16,1)
+		ROLLBACK TRAN
+		RETURN 1
+	END CATCH
+COMMIT TRAN
+RETURN 0
+
+
+GO 
+CREATE OR ALTER PROC sp_XoaLichCaNhan  
+	@MaNhaSi VARCHAR(10),
+	@Ngay DATE,
+	@ca INT
+AS
+SET TRANSACTION ISOLATION LEVEL READ COMMITTED
+BEGIN TRAN
+
+	BEGIN TRY
+		IF NOT EXISTS(SELECT * FROM NHASI WHERE MaNhaSi = @MaNhaSi) 
+		BEGIN  
+			PRINT N'Không tồn tại nha sĩ'
+			ROLLBACK TRAN 
+			RETURN 1 
+		END
+
+		IF NOT EXISTS(SELECT * FROM LICHTRUC WHERE Ngay = @Ngay and ThuTuCa = @Ca) 
+		BEGIN  
+			PRINT N'Lịch trực không tồn tại' 
+			ROLLBACK TRAN 
+			RETURN 1 
+		END
+
+		DELETE LICHCANHAN
+		WHERE MaNhaSi = @MaNhaSi AND Ngay = @Ngay AND ThuTuCa = @Ca
+
+	END TRY
+		
+	BEGIN CATCH
+		RAISERROR(N'LỖI HỆ THỐNG',16,1)
+		ROLLBACK TRAN
+		RETURN 1
+	END CATCH
+
+COMMIT TRAN
+RETURN 0
+
+
+--PROC này để hỗ trợ thêm dữ liệu vào bảng để thực hiện 2 proc trên
+GO
+CREATE OR ALTER PROC sp_ThemDuLieuPhieuHen
+AS
+BEGIN TRAN
+	BEGIN TRY
+		INSERT INTO LICHTRUC VALUES ('2023-12-10',1,'08:00:00', '09:00:00')
+		INSERT INTO LICHTRUC VALUES ('2023-12-10',2,'09:00:00', '10:00:00')
+		INSERT INTO NHASI VALUES ('2000',N'Nguyễn Văn An','2000-12-12',N'Long An','0900000003','2000')
+		INSERT INTO LICHCANHAN VALUES ('2000','2023-12-10',1,N'Rảnh')
+		INSERT INTO LICHCANHAN VALUES ('2000','2023-12-10',2,N'Rảnh')
+		INSERT INTO KHACHHANG VALUES ('0900000001',N'Nguyễn Thị Bee','2003-11-06',N'Đà Nẵng')
+		
+	END TRY
+		
+	BEGIN CATCH
+		RAISERROR(N'LỖI HỆ THỐNG HOẶC ĐÃ TỒN TẠI DỮ LIỆU CẦN THÊM, KHÔNG CẦN THÊM LẠI',16,1)
+		ROLLBACK TRAN
+		RETURN 1
+	END CATCH
+COMMIT TRAN
+RETURN 0
+
+

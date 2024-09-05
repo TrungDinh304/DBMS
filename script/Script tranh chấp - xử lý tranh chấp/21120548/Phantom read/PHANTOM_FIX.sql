@@ -1,0 +1,60 @@
+GO
+CREATE OR ALTER PROC sp_XemLichHen
+	@MaNhaSi VARCHAR(10)
+AS
+SET TRANSACTION ISOLATION READ COMMITTED
+BEGIN TRAN
+	BEGIN TRY
+		--Kiểm tra thông tin @MaNhaSi có tồn tại không
+		IF NOT EXISTS (SELECT * FROM NHASI WHERE NHASI.MaNhaSi=@MaNhaSi) 
+		BEGIN 
+			PRINT (N'Nha sĩ không tồn tại') 
+			ROLLBACK TRAN 
+			RETURN 1 
+		END
+		WAITFOR DELAY '00:00:20'
+		--Xem lịch cá nhân của nha sĩ @MaNhaSi
+		SELECT *
+		FROM LICHCANHAN
+		WHERE MaNhaSi = @MaNhaSi
+	END TRY
+		
+	BEGIN CATCH
+		RAISERROR(N'LỖI HỆ THỐNG', 16, 1)
+		ROLLBACK TRAN
+		RETURN 1
+	END CATCH
+COMMIT TRAN 
+RETURN 0
+
+GO
+CREATE OR ALTER PROC sp_XoaLichHen
+	@MaNhaSi VARCHAR(10),
+	@Ngay DATE,
+	@ThuTuCa INT
+AS
+SET TRANSACTION ISOLATION READ COMMITTED
+BEGIN TRAN
+	BEGIN TRY
+		--Kiểm tra thông tin @MaNhaSi, @Ngay, @ThuTuCa có tồn tại trong bảng LICHCANHAN không 
+		IF NOT EXISTS (SELECT * FROM LICHCANHAN WHERE LICHCANHAN.MaNhaSi=@MaNhaSi AND LICHCANHAN.Ngay = @Ngay AND LICHCANHAN.ThuTuCa = @ThuTuCa) 
+		BEGIN 
+			PRINT(N'Lịch cá nhân này không tồn tại') 
+            ROLLBACK TRAN 
+            RETURN 1 
+		END
+		--Thực hiện xóa lịch cá nhân cần xóa 
+		DELETE LICHCANHAN
+		WHERE MaNhaSi = @MaNhaSi	
+		AND Ngay = @Ngay  
+		AND ThuTuCa = @ThuTuCa 
+		WAITFOR DELAY '00:00:20'
+	END TRY
+	
+	BEGIN CATCH
+		RAISERROR(N'LỖI HỆ THỐNG', 16, 1)
+		ROLLBACK TRAN
+		RETURN 1
+	END CATCH
+COMMIT TRAN 
+RETURN 0

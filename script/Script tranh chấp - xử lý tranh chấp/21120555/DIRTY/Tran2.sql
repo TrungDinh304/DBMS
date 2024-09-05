@@ -1,0 +1,4 @@
+USE QLPHONGKHAM
+GO
+
+EXEC sp_XemThongTinThuoc 'T002'

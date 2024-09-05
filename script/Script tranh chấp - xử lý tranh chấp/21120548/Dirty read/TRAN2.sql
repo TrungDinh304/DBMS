@@ -1,0 +1,1 @@
+EXEC dbo.sp_TraCuuHoSoBenhNhan '0383571234', 'BA32'

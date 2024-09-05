@@ -1,0 +1,7 @@
+﻿USE QLPHONGKHAM
+GO
+EXEC sp_XoaLichCaNhan '2000','2023-12-10',2
+
+SELECT * FROM LICHCANHAN
+--UPDATE LICHCANHAN SET TrangThai = N'Rảnh' WHERE Ngay = '2023-12-10' and ThuTuCa = 2 and MaNhaSi = '2000'
+

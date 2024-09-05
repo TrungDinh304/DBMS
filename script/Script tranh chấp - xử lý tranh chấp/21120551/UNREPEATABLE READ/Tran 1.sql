@@ -1,0 +1,7 @@
+GO
+EXEC sp_ThemDuLieu
+
+GO
+EXEC sp_XemLichHen '1000','2023-11-20'
+
+SELECT*FROM PHIEUHEN
